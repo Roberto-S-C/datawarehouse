@@ -1,0 +1,38 @@
+source:
+  files:
+    - type: csv
+      path: C:/Users/PC/clientes.csv
+    - type: json
+      path: C:/Users/PC/productos.json
+    - type: excel
+      path: C:/Users/PC/ventas.xlsx
+      sheet_name: Sheet1
+
+transform:
+  #Elimina columnas que no sean necesarias
+  drop_columns: [comentarios, notas]
+
+  #Renombra columnas para mantener consistencia
+  rename:
+    nombre_cliente: cliente
+    producto_id: id_producto
+    fecha_venta: fecha
+
+  #Rellena valores faltantes
+  fillna:
+    precio: 0
+    cantidad: 1
+
+  #Quita duplicados
+  deduplicate: true
+
+#Añade columna de precio total
+  feature_engineering:
+    - total_price 
+
+load:
+  type: csv
+  path: data/datos_combinados.csv
+
+logging:
+  level: INFO
