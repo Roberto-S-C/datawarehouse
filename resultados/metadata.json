@@ -1,0 +1,41 @@
+{
+  "process_id": "9e9d25ea-80f0-4c77-8054-d6c108f8e264",
+  "timestamp": "2025-11-29T20:47:50.258142",
+  "original_files": [
+    "clientes.csv",
+    "productos.json",
+    "ventas.xlsx"
+  ],
+  "config": {
+    "source": {
+      "files": [
+        {
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpqg76ggu3\\clientes.csv",
+          "type": "csv",
+          "original_name": "clientes.csv"
+        },
+        {
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpqg76ggu3\\productos.json",
+          "type": "json",
+          "original_name": "productos.json"
+        },
+        {
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpqg76ggu3\\ventas.xlsx",
+          "type": "excel",
+          "original_name": "ventas.xlsx"
+        }
+      ]
+    },
+    "transform": {
+      "deduplicate": true,
+      "fillna": {
+        "rating": 0
+      }
+    },
+    "load": {
+      "type": "csv",
+      "path": "resultados\\transformed_data.csv",
+      "metadata": "resultados\\metadata.json"
+    }
+  }
+}

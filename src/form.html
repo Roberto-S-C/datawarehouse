@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto ETL</title>
+</head>
+
+<body style="height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <form action="http://127.0.0.1:8000/etl/" method="post" enctype="multipart/form-data"
+        style="width: 30%; height: 40%; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; border: 1px solid cornflowerblue; padding: 8px; border-radius: 5px;">
+        <h2 style="text-align: center; color: cornflowerblue;">Proyecto ETL</h2>
+        <div style="width: 70%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <label for="upload-files" style="width: 70%;">Seleccionar archivos</label>
+            <input id="upload-files" name="files" type="file" required multiple style="width: 70%;" />
+        </div>
+
+        <input type="submit" style="width: 50%;" />
+    </form>
+</body>
+
+</html>

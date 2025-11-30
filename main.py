@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 from typing import Optional, Dict, Any, List
@@ -14,9 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import json
 from uuid import uuid4
-import shutil
 from datetime import datetime
 from collections import defaultdict
+from fastapi.responses import HTMLResponse
 
 # --------------------------- Utilidades ---------------------------
 
@@ -222,12 +221,20 @@ def convert_numpy_values(obj):
         return obj.item()
     return obj
 
+@app.get("/", response_class=HTMLResponse)
+def form():
+    htmlContent = '' 
+    with open(Path(Path.cwd(), 'src', 'form.html'), 'r', encoding='UTF-8') as file:
+        htmlContent = file.read()
+    return htmlContent
+
 @app.post("/etl/")
 async def etl_endpoint(
     files: List[UploadFile] = File(...),
     config: Optional[str] = None,
     phase: str = "all"
 ):
+
     # Genera ID único para el proceso 
     process_id = str(uuid4())
     
@@ -237,7 +244,7 @@ async def etl_endpoint(
     )
     
     # Directorio para resultados
-    results_dir = Path("datawarehouse")
+    results_dir = Path("resultados")
     process_dir = results_dir
     process_dir.mkdir(parents=True, exist_ok=True)
     
