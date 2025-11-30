@@ -210,9 +210,6 @@ class FileTypeDetector:
         extension = filename.lower().split('.')[-1]
         type_mapping = {
             'csv': 'csv',
-            'json': 'json',
-            'xlsx': 'excel',
-            'xls': 'excel'
         }
         return type_mapping.get(extension, 'unknown')
 
