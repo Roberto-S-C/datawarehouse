@@ -16,6 +16,8 @@ from uuid import uuid4
 from datetime import datetime
 from collections import defaultdict
 from fastapi.responses import HTMLResponse
+from ranking_clientes import algoritmos
+from fastapi.staticfiles import StaticFiles
 
 # --------------------------- Utilidades ---------------------------
 
@@ -202,6 +204,7 @@ process_tracker = ETLProcessTracker()
 
 #--------------------------- API ---------------------------
 app = FastAPI()
+app.mount("/imagenes", StaticFiles(directory="imagenes"), name="imagenes")
 
 class FileTypeDetector:
     @staticmethod
@@ -225,12 +228,19 @@ def form():
         htmlContent = file.read()
     return htmlContent
 
-@app.post("/etl/")
+@app.post("/etl/", response_class=HTMLResponse)
 async def etl_endpoint(
     files: List[UploadFile] = File(...),
     config: Optional[str] = None,
     phase: str = "all"
 ):
+    # Guardar archivos
+    os.makedirs(Path(Path.cwd(), 'datasets'), exist_ok=True)
+    for file in files:
+        contents = await file.read()
+        with open(Path(Path.cwd(), 'datasets', file.filename), "wb") as f:
+            f.write(contents)
+            f.close()
 
     # Genera ID único para el proceso 
     process_id = str(uuid4())
@@ -251,270 +261,12 @@ async def etl_endpoint(
             "error": "At least one file is required"
         }
     
-    #Directorio temporal para archivos subidos
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Save uploaded files
-        file_paths = []
-        file_configs = []
-        
-        for file in files:
-            file_path = Path(temp_dir) / file.filename
-            with open(file_path, "wb") as f:
-                contents = await file.read()
-                f.write(contents)
-            
-            file_type = FileTypeDetector.detect_file_type(file.filename)
-            if file_type == 'unknown':
-                return {"error": f"Unsupported file type: {file.filename}"}
-                
-            file_paths.append(str(file_path))
-            file_configs.append({
-                "path": str(file_path),
-                "type": file_type,
-                "original_name": file.filename
-            })
-        
-        default_config = {
-            "source": {
-                "files": file_configs
-            },
-            "transform": {
-                "deduplicate": True,
-                "fillna": {"rating": 0}
-            },
-            "load": {
-                "type": "csv",
-                "path": str(process_dir / "transformed_data.csv"),
-                "metadata": str(process_dir / "metadata.json")
-            }
-        }
-        
-        if config:
-            try:
-                custom_config = json.loads(config)
-                if "transform" in custom_config:
-                    default_config["transform"].update(custom_config["transform"])
-                if "load" in custom_config:
-                    default_config["load"].update(custom_config["load"])
-            except json.JSONDecodeError:
-                return {"error": "Invalid JSON configuration"}
-        
-        config_path = Path(temp_dir) / "config.yml"
-        with open(config_path, "w") as f:
-            yaml.dump(default_config, f)
+    algoritmos()
 
-        #Inicia el pipeline ETL
-        pipeline = ETLPipeline(str(config_path))
-        
-        try:
-            #Guarda metadata del proceso
-            metadata = {
-                "process_id": process_id,
-                "timestamp": datetime.now().isoformat(),
-                "original_files": [f["original_name"] for f in file_configs],
-                "config": default_config
-            }
-            
-            with open(process_dir / "metadata.json", "w") as f:
-                json.dump(metadata, f, indent=2)
-
-            if phase == "extract":
-                #guarda cada archivo extraído con su nombre original
-                df = pipeline.run_extract()
-                for file_config in file_configs:
-                    file_type = file_config["type"]
-                    original_name = file_config["original_name"]
-                    base_name = Path(original_name).stem
-                    
-                    if file_type == "csv":
-                        df.to_csv(process_dir / original_name, index=False)
-                    elif file_type == "json":
-                        df.to_json(process_dir / original_name, orient="records", force_ascii=False)
-                    elif file_type == "excel":
-                        df.to_excel(process_dir / original_name, index=False)
-                
-                stats = {
-                    "rows_processed": convert_numpy_values(len(df)),
-                    "columns_processed": convert_numpy_values(len(df.columns)),
-                    "duplicates_removed": 0,
-                    "null_values_filled": 0
-                }
-                process_tracker.update_process(process_id, "extract", stats)
-                process_tracker.complete_process(process_id, success=True)
-                return {
-                    "process_id": process_id,
-                    "status": "success",
-                    "phase": "extract",
-                    **stats,
-                    "files_processed": [f["original_name"] for f in file_configs],
-                    "output_directory": str(process_dir)
-                }
-            
-            elif phase == "transform":
-                df = pipeline.run_transform()
-                # Guarda cada archivo transformado con _transformed
-                for file_config in file_configs:
-                    file_type = file_config["type"]
-                    original_name = file_config["original_name"]
-                    base_name = Path(original_name).stem
-                    extension = Path(original_name).suffix
-                    transformed_name = f"{base_name}_transformed{extension}"
-                    
-                    if file_type == "csv":
-                        df.to_csv(process_dir / transformed_name, index=False)
-                    elif file_type == "json":
-                        df.to_json(process_dir / transformed_name, orient="records", force_ascii=False)
-                    elif file_type == "excel":
-                        df.to_excel(process_dir / transformed_name, index=False)
-                
-                stats = {
-                    "rows_processed": convert_numpy_values(len(df)),
-                    "columns_processed": convert_numpy_values(len(df.columns)),
-                    "duplicates_removed": convert_numpy_values(len(df) - len(df.drop_duplicates())),
-                    "null_values_filled": convert_numpy_values(df.isna().sum().sum())
-                }
-                process_tracker.update_process(process_id, "transform", stats)
-                process_tracker.complete_process(process_id, success=True)
-                return {
-                    "process_id": process_id,
-                    "status": "success",
-                    "phase": "transform",
-                    **stats,
-                    "output_directory": str(process_dir)
-                }
-                
-            elif phase == "load":
-                pipeline.run_load()
-                process_tracker.update_process(process_id, "load", {})
-                process_tracker.complete_process(process_id, success=True)
-                return {
-                    "process_id": process_id,
-                    "status": "success",
-                    "phase": "load",
-                    "output_directory": str(process_dir)
-                }
-                
-            else:
-                
-                df = pipeline.run_extract()
-                for file_config in file_configs:
-                    file_type = file_config["type"]
-                    original_name = file_config["original_name"]
-                    
-                    if file_type == "csv":
-                        df.to_csv(process_dir / original_name, index=False)
-                    elif file_type == "json":
-                        df.to_json(process_dir / original_name, orient="records", force_ascii=False)
-                    elif file_type == "excel":
-                        df.to_excel(process_dir / original_name, index=False)
-                        
-                extract_stats = {
-                    "rows_processed": convert_numpy_values(len(df)),
-                    "columns_processed": convert_numpy_values(len(df.columns))
-                }
-                process_tracker.update_process(process_id, "extract", extract_stats)
-                
-                df = pipeline.run_transform(df)
-                for file_config in file_configs:
-                    file_type = file_config["type"]
-                    original_name = file_config["original_name"]
-                    base_name = Path(original_name).stem
-                    extension = Path(original_name).suffix
-                    transformed_name = f"{base_name}_transformed{extension}"
-                    
-                    if file_type == "csv":
-                        df.to_csv(process_dir / transformed_name, index=False)
-                    elif file_type == "json":
-                        df.to_json(process_dir / transformed_name, orient="records", force_ascii=False)
-                    elif file_type == "excel":
-                        df.to_excel(process_dir / transformed_name, index=False)
-                        
-                transform_stats = {
-                    "rows_processed": convert_numpy_values(len(df)),
-                    "columns_processed": convert_numpy_values(len(df.columns)),
-                    "duplicates_removed": convert_numpy_values(len(df) - len(df.drop_duplicates())),
-                    "null_values_filled": convert_numpy_values(df.isna().sum().sum())
-                }
-                process_tracker.update_process(process_id, "transform", transform_stats)
-                
-                pipeline.run_load(df)
-                process_tracker.update_process(process_id, "load", {})
-                process_tracker.complete_process(process_id, success=True)
-                
-                return {
-                    "process_id": process_id,
-                    "status": "success",
-                    "phase": "all",
-                    **transform_stats,
-                    "files_processed": [f["original_name"] for f in file_configs],
-                    "output_directory": str(process_dir)
-                }
-                
-        except Exception as e:
-            process_tracker.add_error(process_id, str(e))
-            process_tracker.complete_process(process_id, success=False)
-            # Save error information
-            with open(process_dir / "error.txt", "w") as f:
-                f.write(str(e))
-            return {
-                "process_id": process_id,
-                "error": str(e),
-                "output_directory": str(process_dir)
-            }
-
-@app.get("/etl/status")
-async def etl_status(process_id: Optional[str] = None):
-    
-    if process_id:
-        if process_id not in process_tracker.processes:
-            return {
-                "error": f"Process {process_id} not found",
-                "status": "not_found"
-            }
-            
-        process = process_tracker.processes[process_id]
-        return {
-            "process_id": process_id,
-            "status": process["status"],
-            "phase": process["current_phase"],
-            "start_time": process["start_time"].isoformat(),
-            "files_processed": process["files"],
-            "statistics": process["statistics"],
-            "errors": process["errors"],
-            "duration": str(process.get("duration", "running")),
-            "end_time": process.get("end_time", "").isoformat() if process.get("end_time") else None
-        }
-    
-    #Muestra estado del proceso
-    active_processes = sum(1 for p in process_tracker.processes.values() 
-                         if p["status"] == "running")
-    
-    recent_processes = {
-        pid: {
-            "status": data["status"],
-            "phase": data["current_phase"],
-            "start_time": data["start_time"].isoformat(),
-            "files": data["files"],
-            "error_count": len(data["errors"]),
-            "statistics": data["statistics"]
-        }
-        for pid, data in sorted(
-            process_tracker.processes.items(),
-            key=lambda x: x[1]["start_time"],
-            reverse=True
-        )[:5]  # Last 5 processes
-    }
-    
-    return {
-        "service_status": "running",
-        "global_statistics": {
-            "total_processes": process_tracker.statistics["total_processes"],
-            "completed_processes": process_tracker.statistics["completed_processes"],
-            "active_processes": active_processes,
-            "error_count": process_tracker.statistics["errors"]
-        },
-        "recent_processes": recent_processes
-    }
+    htmlContent = '' 
+    with open(Path(Path.cwd(), 'src', 'results.html'), 'r', encoding='UTF-8') as file:
+        htmlContent = file.read()
+    return htmlContent
 
 #-----------------------------------------------------------
 

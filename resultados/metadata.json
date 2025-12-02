@@ -1,28 +1,28 @@
 {
-  "process_id": "70299b87-43d1-46aa-9e07-a83ff5646fe5",
-  "timestamp": "2025-11-29T20:52:18.219245",
+  "process_id": "174ff83c-3577-4d9a-887a-1b5cfb84e995",
+  "timestamp": "2025-11-30T19:46:54.128401",
   "original_files": [
     "clientes.csv",
-    "productos.json",
-    "ventas.xlsx"
+    "productos.csv",
+    "ventas.csv"
   ],
   "config": {
     "source": {
       "files": [
         {
-          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu1wih109\\clientes.csv",
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu5d4t3jd\\clientes.csv",
           "type": "csv",
           "original_name": "clientes.csv"
         },
         {
-          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu1wih109\\productos.json",
-          "type": "json",
-          "original_name": "productos.json"
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu5d4t3jd\\productos.csv",
+          "type": "csv",
+          "original_name": "productos.csv"
         },
         {
-          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu1wih109\\ventas.xlsx",
-          "type": "excel",
-          "original_name": "ventas.xlsx"
+          "path": "C:\\Users\\rober\\AppData\\Local\\Temp\\tmpu5d4t3jd\\ventas.csv",
+          "type": "csv",
+          "original_name": "ventas.csv"
         }
       ]
     },

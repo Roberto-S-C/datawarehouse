@@ -4,20 +4,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proyecto ETL</title>
+    <title>Resultados ETL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            width: 100%;
+            max-width: 450px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 30px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            color: #764ba2;
+        }
+
+        .file-input-label svg {
+            margin-right: 10px;
+            width: 24px;
+            height: 24px;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="submit"]:active {
+            transform: translateY(0);
+        }
+
+        .info-text {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
-<body style="height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-    <form action="http://127.0.0.1:8000/etl/" method="post" enctype="multipart/form-data"
-        style="width: 30%; height: 40%; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; border: 1px solid cornflowerblue; padding: 8px; border-radius: 5px;">
-        <h2 style="text-align: center; color: cornflowerblue;">Proyecto ETL</h2>
-        <div style="width: 70%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <label for="upload-files" style="width: 70%;">Seleccionar archivos</label>
-            <input id="upload-files" name="files" type="file" required multiple style="width: 70%;" />
-        </div>
+<body>
+    <div class="container">
+        <h2>Proyecto ETL</h2>
 
-        <input type="submit" style="width: 50%;" />
-    </form>
+        <form action="http://127.0.0.1:8000/etl/" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="upload-files">📁 Seleccionar archivos</label>
+                <div class="file-input-wrapper">
+                    <input id="upload-files" name="files" type="file" required multiple accept=".csv" />
+                    <label for="upload-files" class="file-input-label">
+                        <span>Haz clic o arrastra archivos aquí</span>
+                    </label>
+                </div>
+            </div>
+
+            <input type="submit" value="ENVIAR" />
+            <p class="info-text">Formatos soportados: CSV</p>
+        </form>
+    </div>
 </body>
 
 </html>
